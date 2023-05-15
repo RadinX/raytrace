@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+    <script>
+      // Definisi kelas Vector untuk merepresentasikan vektor 3D
+      class Vector {
+        constructor(x, y, z) {
+          this.x = x;
+          this.y = y;
+          this.z = z;
+        }
+        // Penjumlahan dua vektor
+        add(v) {
+          return new Vector(this.x + v.x, this.y + v.y, this.z + v.z);
+        }
+        // Pengurangan dua vektor
+        sub(v) {
+          return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
+        }
+        // Perkalian titik dua vektor
+        dot(v) {
+          return this.x * v.x + this.y * v.y + this.z * v.z;
+        }
+        // Magnitude (panjang) dari vektor
+        magnitude() {
+          return Math.sqrt(this.dot(this));
+        }
+        // Normalisasi vektor (membuatnya menjadi vektor satuan)
+        normalize() {
+          let mag = this.magnitude();
+          return new Vector(this.x / mag, this.y / mag, this.z / mag);
+        }
+        // Scaling vektor dengan skalar
+        scale(s) {
+          return new Vector(this.x * s, this.y * s, this.z * s);
+        }
+      }
+      // Mendapatkan elemen canvas dan konteks rendering 2D
+      let canvas = document.getElementById('myCanvas');
+      let ctx = canvas.getContext('2d');
+      // Mengatur properti untuk bola, kamera, cahaya, dan material
+      let sphereCenter = new Vector(0, 0, 0); // Pusat bola
+      let sphereRadius = 1; // Radius bola
+      let camera = new Vector(0, 0, 5); // Posisi kamera
+      let lightPosition = new Vector(5, 5, 5); // Posisi cahaya
+      let lightColor = new Vector(1, 1, 1); // Warna cahaya (putih)
+      let sphereColor = new Vector(1, 0, 0); // Warna bola (merah)
+      let specularColor = new Vector(1, 1, 1); // Warna specular highlights (putih)
+      let shininess = 50; // Nilai shininess untuk material
+      let fov = 90.0; // Sudut pandang (FOV) dalam derajat
+      let aspectRatio = canvas.width / canvas.height;
+      let fovRad = Math.tan(((fov / 2) / 180) * Math.PI); // Mengubah FOV menjadi radian
+      // Fungsi untuk menghitung warna piksel berdasarkan ray tracing
+      function getColor(rayOrigin, rayDirection, lightPosition, lightColor, sphereColor, specularColor, shininess) {
+        // Menghitung arah dari ray origin ke sumber cahaya
+        let lightDirection = lightPosition.sub(rayOrigin).normalize();
+        // Menghitung vektor normal di ray origin (pusat bola dalam hal ini)
+        let normal = rayOrigin.normalize();
+        // Menghitung komponen difus (pantulan Lambertian)
+        let diffuse = Math.max(0, lightDirection.dot(normal));
+        // Menghitung vektor tengah antara arah cahaya dan arah ray
+        let halfwayDir = lightDirection.add(rayDirection.scale(-1)).normalize();
+        // Menghitung komponen specular (pantulan
+        let specular = Math.pow(Math.max(0.0, normal.dot(halfwayDir)), shininess);
+        // Menghitung warna akhir dengan menggabungkan komponen difus dan specular
+        let color = sphereColor.scale(diffuse).add(specularColor.scale(specular));
+        // Menerapkan warna cahaya ke warna akhir
+        color = color.scale(lightColor.magnitude());
+        return color;
+      }
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          let px = (2 * ((x + 0.5) / canvas.width) - 1) * aspectRatio * fovRad;
+          let py = (1 - 2 * ((y + 0.5) / canvas.height)) * fovRad;
+          let rayDirection = new Vector(px, py, -1).normalize();
+          // Melakukan transformasi terbalik pada ray
+          let rayOriginTransformed = camera.sub(sphereCenter).scale(1 / sphereRadius);
+          let rayDirectionTransformed = rayDirection.scale(1 / sphereRadius);
+          let a = rayDirectionTransformed.dot(rayDirectionTransformed);
+          let b = 2.0 * rayOriginTransformed.dot(rayDirectionTransformed);
+          let c = rayOriginTransformed.dot(rayOriginTransformed) - 1; // Mengurangi kuadrat radius bola
+          let discriminant = b * b - 4 * a * c;
+          if (discriminant >= 0) {
+            let t = (-b - Math.sqrt(discriminant)) / (2 * a);
+            let hitPosition = rayOriginTransformed.add(rayDirectionTransformed.scale(t));
+            let color = getColor(hitPosition, rayDirection, lightPosition, lightColor, sphereColor, specularColor, shininess);
+            ctx.fillStyle = `rgb(${Math.min(color.x * 255, 255)}, ${Math.min(color.y * 255, 255)}, ${Math.min(color.z * 255, 255)})`;
+            ctx.fillRect(x, y, 1, 1);
+          } else {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
