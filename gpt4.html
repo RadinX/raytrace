@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="500" height="500"></canvas>
+
+<script>
+class Vector {
+    constructor(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    sub(v) {
+        return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
+    }
+
+    dot(v) {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    }
+
+    magnitude() {
+        return Math.sqrt(this.dot(this));
+    }
+
+    normalize() {
+        let mag = this.magnitude();
+        return new Vector(this.x / mag, this.y / mag, this.z / mag);
+    }
+}
+
+let canvas = document.getElementById('myCanvas');
+let ctx = canvas.getContext('2d');
+
+let sphereCenter = new Vector(0, 0, 0);
+let sphereRadius = 14;
+
+let camera = new Vector(0, 0, 15);
+
+for (let x = 0; x < canvas.width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+
+        let pixelPos = new Vector(x - canvas.width / 2, y - canvas.height / 2, 0);
+        let rayDirection = pixelPos.sub(camera).normalize();
+
+        let oc = camera.sub(sphereCenter);
+
+        let a = rayDirection.dot(rayDirection);
+        let b = 2.0 * oc.dot(rayDirection);
+        let c = oc.dot(oc) - sphereRadius * sphereRadius;
+        let discriminant = b * b - 4 * a * c;
+
+        if (discriminant > 0) {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(x, y, 1, 1);
+        } else {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

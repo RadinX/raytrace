@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="500" height="500"></canvas>
+
+<script>
+class Vector {
+    constructor(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    sub(v) {
+        return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
+    }
+
+    dot(v) {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    }
+
+    magnitude() {
+        return Math.sqrt(this.dot(this));
+    }
+
+    normalize() {
+        let mag = this.magnitude();
+        return new Vector(this.x / mag, this.y / mag, this.z / mag);
+    }
+
+    scale(s) {
+        return new Vector(this.x * s, this.y * s, this.z * s);
+    }
+}
+
+let canvas = document.getElementById('myCanvas');
+let ctx = canvas.getContext('2d');
+
+let sphereCenter = new Vector(0, 0, 0);
+let sphereRadius = 3;
+
+let camera = new Vector(0, 0, 15);
+
+let fov = 90.0; // Field of view in degrees
+let aspectRatio = canvas.width / canvas.height;
+let fovRad = 1.0 / Math.tan(fov * 0.5 / 180.0 * Math.PI);
+
+for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+
+        let px = (2 * ((x + 0.5) / canvas.width) - 1) * Math.tan(fov / 2.0 * Math.PI) * aspectRatio;
+        let py = (1 - 2 * ((y + 0.5) / canvas.height)) * Math.tan(fov / 2.0 * Math.PI);
+        let rayDirection = new Vector(px, py, -1).normalize();
+
+        // Applying inverse transformation to the ray
+        let rayOriginTransformed = camera.sub(sphereCenter).scale(1/sphereRadius);
+        let rayDirectionTransformed = rayDirection.scale(1/sphereRadius);
+
+        let a = rayDirectionTransformed.dot(rayDirectionTransformed);
+        let b = 2.0 * rayOriginTransformed.dot(rayDirectionTransformed);
+        let c = rayOriginTransformed.dot(rayOriginTransformed) - 1; // Subtract unit sphere radius squared
+
+        let discriminant = b * b - 4 * a * c;
+
+        if (discriminant > 0) {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(x, y, 1, 1);
+        } else {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+}
+</script>
+
+</body>
+</html>
